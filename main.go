@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"path/filepath"
 	"net/http"
-	"encoding/json"
+	"path/filepath"
 	"strconv"
 
 	"gopkg.in/yaml.v2"
@@ -13,15 +13,14 @@ import (
 
 type HostAndPort struct {
 	Hostname string `yaml:"host"`
-	Port int `yaml:"port"`
+	Port     int    `yaml:"port"`
 }
 
 type BuildInfo struct {
-	GroupId string `json:"groupId"`
+	GroupId    string `json:"groupId"`
 	ArtifactId string `json:"artifactId"`
-	Version string `json:"version"`
+	Version    string `json:"version"`
 }
-
 
 func main() {
 	version := flag.String("versionToCheck", "", "Expected version number to check for in the /build-info endpoint")
@@ -50,10 +49,9 @@ func ParseConfig(filename string) []HostAndPort {
 
 func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 	resp, err := http.Get("http://" + hostAndPort.Hostname + ":" + strconv.Itoa(hostAndPort.Port) + "/build-info")
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
-
 
 	defer resp.Body.Close()
 	var deployedServiceInfo BuildInfo
@@ -69,7 +67,7 @@ func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 
 	if deployedServiceInfo.Version == version {
 		return true, "Success"
-	}else{
+	} else {
 		return true, "Expected: " + version + ", but found: " + deployedServiceInfo.Version
 	}
 
