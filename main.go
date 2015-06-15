@@ -24,8 +24,9 @@ type BuildInfo struct {
 
 func main() {
 	version := flag.String("versionToCheck", "", "Expected version number to check for in the /build-info endpoint")
+	configFileName := flag.String("config", "", "Expected a yml file with the host and port configuration for the services to check")
 
-	filename, _ := filepath.Abs("./services.yml")
+	filename, _ := filepath.Abs("./" + *configFileName)
 	hostAndPorts := ParseConfig(filename)
 	for _, hostAndPort := range hostAndPorts {
 		AssertVersion(hostAndPort, *version)
