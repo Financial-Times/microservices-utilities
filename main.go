@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"fmt"
+	"os"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type HostAndPort struct {
@@ -17,19 +19,34 @@ type HostAndPort struct {
 }
 
 type BuildInfo struct {
-	GroupId    string `json:"groupId"`
-	ArtifactId string `json:"artifactId"`
-	Version    string `json:"version"`
+	GroupId    string `json:"artifact.groupId"`
+	ArtifactId string `json:"artifact.id"`
+	Version    string `json:"artifact.version"`
 }
 
-func main() {
-	version := flag.String("versionToCheck", "", "Expected version number to check for in the /build-info endpoint")
-	configFileName := flag.String("config", "", "Expected a yml file with the host and port configuration for the services to check")
+type BuildInfoResponse struct {
+	BuildInfo BuildInfo `json:"buildInfo"`
+}
 
-	filename, _ := filepath.Abs("./" + *configFileName)
+var version = flag.String("version", "", "Expected version number to check for in the /build-info endpoint")
+var configFileName = flag.String("config", "", "Expected a yml file with the host and port configuration for the services to check")
+
+func main() {
+	flag.Parse()
+	fmt.Println("Version to check " + *version)
+	fmt.Println("Service file to check " + 	*configFileName)
+
+	filename, _ := filepath.Abs(*configFileName)
 	hostAndPorts := ParseConfig(filename)
 	for _, hostAndPort := range hostAndPorts {
-		AssertVersion(hostAndPort, *version)
+		status, message := AssertVersion(hostAndPort, *version)
+		if !status {
+			fmt.Println("FAIL:" + message)
+			os.Exit(1)
+		}else{
+			fmt.Println(message)
+			os.Exit(0)
+		}
 	}
 }
 
@@ -55,7 +72,7 @@ func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 	}
 
 	defer resp.Body.Close()
-	var deployedServiceInfo BuildInfo
+	var deployedServiceInfo BuildInfoResponse
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
@@ -66,10 +83,10 @@ func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 		panic(err)
 	}
 
-	if deployedServiceInfo.Version == version {
+	if deployedServiceInfo.BuildInfo.Version == version {
 		return true, "Success"
 	} else {
-		return true, "Expected: " + version + ", but found: " + deployedServiceInfo.Version
+		return false, "Expected: " + version + ", but found: " + deployedServiceInfo.BuildInfo.Version
 	}
 
 }
