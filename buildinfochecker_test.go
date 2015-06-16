@@ -66,7 +66,7 @@ func TestAssertionOfVersion(t *testing.T) {
 	defer teardown()
 
 	mux.HandleFunc("/build-info", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"groupId":"testing","artifactId":"testing-service","version":"1.2.3"}`)
+		fmt.Fprint(w, `{"buildInfo" : {"artifact.groupId":"testing","artifact.id":"testing-service","artifact.version":"1.2.3"}}`)
 	},
 	)
 
