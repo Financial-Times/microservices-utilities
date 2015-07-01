@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	yaml "gopkg.in/yaml/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type HostAndPort struct {
