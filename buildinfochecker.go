@@ -31,6 +31,11 @@ type BuildInfoResponse struct {
 var version = flag.String("version", "", "Expected version number to check for in the /build-info endpoint")
 var configFileName = flag.String("config", "", "Expected a yml file with the host and port configuration for the services to check")
 
+func errorMessage(message string) {
+	fmt.Println(message)
+	os.Exit(1)
+}
+
 func main() {
 	flag.Parse()
 	fmt.Println("Version to check " + *version)
@@ -38,15 +43,13 @@ func main() {
 
 	filename, err := filepath.Abs(*configFileName)
 	if err != nil {
-		fmt.Printf("Unable to read the file: %s. Error is %v\n", *configFileName, err)
-		panic(err)
+		errorMessage(fmt.Sprintf("Unable to read the file: %s. Error is %v\n", *configFileName, err))
 	}
 	hostAndPorts := ParseConfig(filename)
 	for _, hostAndPort := range hostAndPorts {
 		status, message := AssertVersion(hostAndPort, *version)
 		if !status {
-			fmt.Println("FAIL:" + message)
-			os.Exit(1)
+			errorMessage("FAIL: " + message)
 		} else {
 			fmt.Println(message)
 			os.Exit(0)
@@ -57,16 +60,14 @@ func main() {
 func ParseConfig(filename string) []HostAndPort {
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
-		fmt.Printf("error reading yaml file: %v\n", err)
-		panic(err)
+		errorMessage(fmt.Sprintf("error reading yaml file: %v\n", err))
 	}
 
 	var hostAndPorts []HostAndPort
 
 	err = yaml.Unmarshal(yamlFile, &hostAndPorts)
 	if err != nil {
-		fmt.Printf("error parsing yaml file: %v\n", err)
-		panic(err)
+		errorMessage(fmt.Sprintf("error parsing yaml file: %v\n", err))
 	}
 	return hostAndPorts
 }
@@ -76,22 +77,19 @@ func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 	fmt.Printf("Cheking %v for version %v\n", url, version)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Unable to get to the /build-info endpoint. Error is : %v\n", err)
-		panic(err)
+		errorMessage(fmt.Sprintf("Unable to get to the /build-info endpoint. Error is : %v\n", err))
 	}
 
 	defer resp.Body.Close()
 	var deployedServiceInfo BuildInfoResponse
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Unable to read the Response. Error is : %v\n", err)
-		panic(err)
+		errorMessage(fmt.Sprintf("Unable to read the Response. Error is : %v\n", err))
 	}
 
 	err = json.Unmarshal(data, &deployedServiceInfo)
 	if err != nil {
-		fmt.Printf("Unable to Unmarshall json at /build-info endpoint. Error is : %v\n", err)
-		panic(err)
+		errorMessage(fmt.Sprintf("Unable to Unmarshall json at /build-info endpoint. Error is : %v\n", err))
 	}
 
 	if deployedServiceInfo.BuildInfo.Version == version {
@@ -100,5 +98,4 @@ func AssertVersion(hostAndPort HostAndPort, version string) (bool, string) {
 	} else {
 		return false, "Expected: " + version + ", but found: " + deployedServiceInfo.BuildInfo.Version
 	}
-
 }
